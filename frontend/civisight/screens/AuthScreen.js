@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   View, 
@@ -11,11 +11,30 @@ import {
   Platform 
 } from 'react-native';
 
+import * as SecureStore from 'expo-secure-store';  
 
 const AuthScreen = ({navigation}) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // To show loading state on button
+  const [loading, setLoading] = useState(false); 
+
+  useEffect(() => {
+    const checkTokenAndNavigate = async () => {
+      try {
+        const jwt = await SecureStore.getItemAsync("user_jwt"); 
+        if (jwt) {
+          navigation.navigate('Main');
+        }
+      } catch (error) {
+        console.error("Error retrieving token from SecureStore:", error);
+      }
+    }
+    checkTokenAndNavigate()
+  },[navigation])
+
+  const handleNavigateToMain = () => {
+    navigation.navigate('Main')
+  }
 
   const handleNavigateToRegister = () => {
     navigation.navigate('Register')
@@ -23,10 +42,32 @@ const AuthScreen = ({navigation}) => {
 
   const handleLogin = async () => {
     setLoading(true);
-    console.log('Attempting login with:', { username, password });
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-    setLoading(false);
-    alert(`Login attempt for ${username}. (Check console for details)`);
+    const url = "http://localhost:8080/auth/login"
+    const req = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json' // Tells the server the body is JSON
+      },
+      body: JSON.stringify({ // Converts the JS object into a JSON string
+        email: email,
+        password: password 
+      })
+    }
+    const res = await fetch(url,req)
+
+    if(!res.ok) {
+      const err = await res.json()
+      alert(err)
+      return 
+    }
+
+    const data = await res.json()
+    if(data) {
+      setLoading(false);
+      alert('Successfull login')
+      SecureStore.setItemAsync(data.token)
+      navigation.navigate('Main')
+    }
   };
 
   return (
@@ -43,10 +84,10 @@ const AuthScreen = ({navigation}) => {
 
           <TextInput
             style={styles.input}
-            placeholder="Username or Email"
+            placeholder="Email"
             placeholderTextColor="#888"
-            value={username}
-            onChangeText={setUsername}
+            value={email}
+            onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
@@ -80,6 +121,9 @@ const AuthScreen = ({navigation}) => {
 
           <TouchableOpacity>
             <Text style={styles.forgotPassword}>Forgot your password?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={styles.forgotPassword} onPress={handleNavigateToMain}>Main</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
