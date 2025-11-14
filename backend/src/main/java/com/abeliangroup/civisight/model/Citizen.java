@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +33,9 @@ public class Citizen extends User {
         inverseJoinColumns = @JoinColumn(name = "problem_id")
     )
     private Set<Problem> reportedProblems = new HashSet<>();
+
+    @OneToMany(mappedBy = "citizen", cascade = CascadeType.ALL)
+    private List<Vote> votes = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     private List<String> roles = List.of("CITIZEN");
