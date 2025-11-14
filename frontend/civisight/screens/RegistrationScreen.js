@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   View, 
@@ -11,6 +11,8 @@ import {
   Alert 
 } from 'react-native';
 
+import * as SecureStore from 'expo-secure-store';   
+
 const RegistrationScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -20,13 +22,38 @@ const RegistrationScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (!firstName || !lastName || !email || !password) {
-      Alert.alert('Greška', 'Molimo popunite sva polja.');
+      Alert.alert('Error', 'Please fill all credentials.');
       return;
     }
 
     setLoading(true);
-    console.log('Pokušaj registracije:', { firstName, lastName, email, password });
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try{
+        const url = "http://localhost:8080/auth/register"
+        const req = {
+          method: 'POST',
+          headers: {
+        'Content-Type': 'application/json' 
+          },
+        body: JSON.stringify({ 
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          password: password 
+        })
+        }
+        const res = await fetch(url,req)
+        if(!res.ok) {
+            throw new Error('Error while creating an account')
+            return
+        }
+
+        const data = await res.json()
+        await SecureStore.setItemAsync("user_jwt",data.token)
+
+
+    }catch(error) {
+        console.error(error.message)
+    }
     setLoading(false);
     
     Alert.alert('Uspeh', 'Registracija uspešna!');
