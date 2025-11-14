@@ -15,6 +15,7 @@ public abstract class Problem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String description;
     private String imageUrl;
     private Double latitude;
     private Double longitude;

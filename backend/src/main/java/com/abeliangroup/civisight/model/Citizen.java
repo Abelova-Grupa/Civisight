@@ -3,6 +3,7 @@ package com.abeliangroup.civisight.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
+@Getter
 @DiscriminatorValue("CITIZEN")
 public class Citizen extends User {
 
@@ -32,5 +34,5 @@ public class Citizen extends User {
     private Set<Problem> reportedProblems = new HashSet<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> roles = Set.of("CITIZEN");
+    private List<String> roles = List.of("CITIZEN");
 }

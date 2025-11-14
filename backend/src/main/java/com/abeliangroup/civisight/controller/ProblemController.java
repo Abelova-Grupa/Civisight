@@ -1,0 +1,168 @@
+package com.abeliangroup.civisight.controller;
+
+import com.abeliangroup.civisight.model.*;
+import com.abeliangroup.civisight.repo.ProblemRepository;
+import com.abeliangroup.civisight.repo.CitizenRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/problems")
+@RequiredArgsConstructor
+public class ProblemController {
+
+    private final ProblemRepository problemRepository;
+    private final CitizenRepository citizenRepository;
+
+    private Citizen getCurrentCitizen() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("No authenticated user found");
+        }
+
+        String email = authentication.getName(); // email is stored as JWT subject
+        return citizenRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Citizen not found"));
+    }
+
+    @GetMapping("/auth-test")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public String authTest() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("Auth: " + auth);
+        System.out.println("Authorities: " + auth.getAuthorities());
+        return "Hello, Citizen!";
+    }
+
+    // Get all problems
+    @GetMapping
+    public List<Problem> getAllProblems() {
+        return problemRepository.findAll();
+    }
+
+    // Get problem by ID
+    @GetMapping("/{id}")
+    public Problem getProblemById(@PathVariable Long id) {
+        return problemRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Problem not found"));
+    }
+
+    private final String IMAGE_UPLOAD_DIR = "uploads/images"; // local folder
+
+    @PreAuthorize("hasRole('CITIZEN')")
+    @PostMapping(value="/suggestion", consumes = "multipart/form-data")
+    public Suggestion createSuggestion(
+        @RequestParam String description,
+        @RequestParam(required = false) MultipartFile imageFile
+    ) throws Exception {
+
+        Citizen citizen = getCurrentCitizen();
+        // TODO: Handle non-existing citizen
+
+        Suggestion suggestion = new Suggestion();
+        suggestion.setDescription(description);
+        suggestion.setAuthor(citizen);
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String fileName = saveImage(imageFile);
+            suggestion.setImageUrl("/images/" + fileName); // store relative path
+        }
+
+        return problemRepository.save(suggestion);
+    }
+
+    @PreAuthorize("hasRole('CITIZEN')")
+    @PostMapping(value="/issue", consumes = "multipart/form-data")
+    public Issue createIssue(
+        @RequestParam String description,
+        @RequestParam(required = false) MultipartFile imageFile
+    ) throws Exception {
+        Citizen citizen = getCurrentCitizen();
+        // TODO: Handle non-existing citizen
+
+        Issue issue = new Issue();
+        issue.setDescription(description);
+        issue.setAuthor(citizen);
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String fileName = saveImage(imageFile);
+            issue.setImageUrl("/images/" + fileName);
+        }
+
+        return problemRepository.save(issue);
+    }
+
+    // Helper method to save image
+    private String saveImage(MultipartFile file) throws Exception {
+        Path uploadPath = Paths.get(IMAGE_UPLOAD_DIR);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        String fileExtension = getFileExtension(file.getOriginalFilename());
+        String fileName = UUID.randomUUID() + "." + fileExtension;
+        Path filePath = uploadPath.resolve(fileName);
+        Files.copy(file.getInputStream(), filePath);
+
+        return fileName;
+    }
+
+    private String getFileExtension(String fileName) {
+        return fileName.substring(fileName.lastIndexOf(".") + 1);
+    }
+
+    // Upvote a problem
+    @PreAuthorize("hasRole('CITIZEN')")
+    @PostMapping("/{id}/upvote")
+    public Problem upvoteProblem(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Problem not found"));
+
+        problem.setUpvotes(problem.getUpvotes() + 1);
+        return problemRepository.save(problem);
+    }
+
+    // Downvote a problem
+    @PreAuthorize("hasRole('CITIZEN')")
+    @PostMapping("/{id}/downvote")
+    public Problem downvoteProblem(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Problem not found"));
+
+        problem.setDownvotes(problem.getDownvotes() + 1);
+        return problemRepository.save(problem);
+    }
+
+    // Admin resolves a problem
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{id}/resolve")
+    public Problem resolveProblem(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Problem not found"));
+
+        problem.setStatus(Status.RESOLVED);
+        return problemRepository.save(problem);
+    }
+
+    // Admin cancels a problem
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{id}/cancel")
+    public Problem cancelProblem(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Problem not found"));
+
+        problem.setStatus(Status.CANCELLED);
+        return problemRepository.save(problem);
+    }
+}

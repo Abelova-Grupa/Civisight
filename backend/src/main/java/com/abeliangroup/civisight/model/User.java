@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -21,7 +22,7 @@ public abstract class User {
     private String email;
     private String password; // added for standard Spring auth
 
-    public Set<String> getRoles() {
+    public List<String> getRoles() {
         return null;
     }
 }

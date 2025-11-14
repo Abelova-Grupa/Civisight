@@ -1,5 +1,4 @@
 package com.abeliangroup.civisight.config;
-
 import com.abeliangroup.civisight.security.CustomJwtAuthenticationConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +16,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
@@ -27,6 +25,7 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(new CustomJwtAuthenticationConverter()))
             );
+
 
         return http.build();
     }
