@@ -5,6 +5,8 @@ import com.abeliangroup.civisight.repo.ProblemRepository;
 import com.abeliangroup.civisight.repo.CitizenRepository;
 import com.abeliangroup.civisight.repo.VoteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @RestController
@@ -174,6 +177,22 @@ public class ProblemController {
         problemRepository.save(problem);
         voteRepository.save(vote);
         return true;
+    }
+
+    @PostMapping("/{id}/report")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<?> report(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id).orElseThrow(NoSuchElementException::new);
+        Citizen citizen = getCurrentCitizen();
+        if(citizen.getReportedProblems().contains(problem)) return ResponseEntity.ok("Already reported!");
+
+        citizen.getReportedProblems().add(problem);
+        problem.setReports(problem.getReports() + 1);
+
+        citizenRepository.save(citizen);
+        problemRepository.save(problem);
+        return ResponseEntity.ok("Report saved. Counter increased.");
+
     }
 
 
