@@ -3,7 +3,10 @@ package com.abeliangroup.civisight.controller;
 import com.abeliangroup.civisight.model.*;
 import com.abeliangroup.civisight.repo.ProblemRepository;
 import com.abeliangroup.civisight.repo.CitizenRepository;
+import com.abeliangroup.civisight.repo.VoteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @RestController
@@ -23,6 +27,7 @@ public class ProblemController {
 
     private final ProblemRepository problemRepository;
     private final CitizenRepository citizenRepository;
+    private final VoteRepository voteRepository;
 
     private Citizen getCurrentCitizen() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -86,6 +91,8 @@ public class ProblemController {
     @PostMapping(value="/issue", consumes = "multipart/form-data")
     public Issue createIssue(
         @RequestParam String description,
+        @RequestParam Double latitude,
+        @RequestParam Double longitude,
         @RequestParam(required = false) MultipartFile imageFile
     ) throws Exception {
         Citizen citizen = getCurrentCitizen();
@@ -122,27 +129,95 @@ public class ProblemController {
         return fileName.substring(fileName.lastIndexOf(".") + 1);
     }
 
-    // Upvote a problem
-    @PreAuthorize("hasRole('CITIZEN')")
+    // Adds upvote on true value, otherwise removes upvote
     @PostMapping("/{id}/upvote")
-    public Problem upvoteProblem(@PathVariable Long id) {
-        Problem problem = problemRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Problem not found"));
-
-        problem.setUpvotes(problem.getUpvotes() + 1);
-        return problemRepository.save(problem);
-    }
-
-    // Downvote a problem
     @PreAuthorize("hasRole('CITIZEN')")
-    @PostMapping("/{id}/downvote")
-    public Problem downvoteProblem(@PathVariable Long id) {
-        Problem problem = problemRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Problem not found"));
+    public boolean upvote(@PathVariable Long id, @RequestParam Boolean value) {
+        Vote vote;
+        Citizen citizen = getCurrentCitizen();
+        Problem problem = problemRepository.findById(id).orElseThrow(IllegalArgumentException::new);
 
-        problem.setDownvotes(problem.getDownvotes() + 1);
-        return problemRepository.save(problem);
+        if(!voteRepository.existsByCitizenIdAndProblemId(citizen.getId(), id)) {
+            vote = new Vote();
+            vote.setCitizen(citizen);
+            vote.setProblem(problem);
+        } else {
+            vote = voteRepository.findByCitizenAndProblem(citizen, problem)
+                .orElseThrow(IllegalArgumentException::new);
+        }
+        vote.setUp(value);
+        if(value){
+            problem.setUpvotes(problem.getUpvotes() + 1);
+        } else problem.setUpvotes(problem.getUpvotes() - 1);
+        problemRepository.save(problem);
+        voteRepository.save(vote);
+        return true;
     }
+
+    // Adds upvote on true value, otherwise removes upvote
+    @PostMapping("/{id}/downvote")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public boolean downvote(@PathVariable Long id, @RequestParam Boolean value) {
+        Vote vote;
+        Citizen citizen = getCurrentCitizen();
+        Problem problem = problemRepository.findById(id).orElseThrow(IllegalArgumentException::new);
+
+        if(!voteRepository.existsByCitizenIdAndProblemId(citizen.getId(), id)) {
+            vote = new Vote();
+            vote.setCitizen(citizen);
+            vote.setProblem(problem);
+        } else {
+            vote = voteRepository.findByCitizenAndProblem(citizen, problem)
+                .orElseThrow(IllegalArgumentException::new);
+        }
+        vote.setDown(value);
+        if(value){
+            problem.setDownvotes(problem.getDownvotes() + 1);
+        } else problem.setDownvotes(problem.getDownvotes() - 1);
+        problemRepository.save(problem);
+        voteRepository.save(vote);
+        return true;
+    }
+
+    @PostMapping("/{id}/report")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<?> report(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id).orElseThrow(NoSuchElementException::new);
+        Citizen citizen = getCurrentCitizen();
+        if(citizen.getReportedProblems().contains(problem)) return ResponseEntity.ok("Already reported!");
+
+        citizen.getReportedProblems().add(problem);
+        problem.setReports(problem.getReports() + 1);
+
+        citizenRepository.save(citizen);
+        problemRepository.save(problem);
+        return ResponseEntity.ok("Report saved. Counter increased.");
+
+    }
+
+
+
+//    // Upvote a problem
+//    @PreAuthorize("hasRole('CITIZEN')")
+//    @PostMapping("/{id}/upvote")
+//    public Problem upvoteProblem(@PathVariable Long id) {
+//        Problem problem = problemRepository.findById(id)
+//            .orElseThrow(() -> new RuntimeException("Problem not found"));
+//
+//        problem.setUpvotes(problem.getUpvotes() + 1);
+//        return problemRepository.save(problem);
+//    }
+//
+//    // Downvote a problem
+//    @PreAuthorize("hasRole('CITIZEN')")
+//    @PostMapping("/{id}/downvote")
+//    public Problem downvoteProblem(@PathVariable Long id) {
+//        Problem problem = problemRepository.findById(id)
+//            .orElseThrow(() -> new RuntimeException("Problem not found"));
+//
+//        problem.setDownvotes(problem.getDownvotes() + 1);
+//        return problemRepository.save(problem);
+//    }
 
     // Admin resolves a problem
     @PreAuthorize("hasRole('ADMIN')")

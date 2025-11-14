@@ -1,10 +1,13 @@
 package com.abeliangroup.civisight.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,8 +34,15 @@ public class Citizen extends User {
         joinColumns = @JoinColumn(name = "citizen_id"),
         inverseJoinColumns = @JoinColumn(name = "problem_id")
     )
+    @JsonManagedReference
+    @EqualsAndHashCode.Exclude
     private Set<Problem> reportedProblems = new HashSet<>();
 
+    @OneToMany(mappedBy = "citizen", cascade = CascadeType.ALL)
+    @EqualsAndHashCode.Exclude
+    private List<Vote> votes = new ArrayList<>();
+
     @ElementCollection(fetch = FetchType.EAGER)
+    @EqualsAndHashCode.Exclude
     private List<String> roles = List.of("CITIZEN");
 }
