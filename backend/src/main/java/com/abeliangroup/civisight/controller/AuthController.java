@@ -42,6 +42,8 @@ public class AuthController {
         }
 
         Citizen citizen = new Citizen();
+        citizen.setFirstName(request.getFirstName());
+        citizen.setLastName(request.getLastName());
         citizen.setEmail(request.getEmail());
         citizen.setPassword(passwordEncoder.encode(request.getPassword()));
         citizen.setJmbg(request.getJmbg());
