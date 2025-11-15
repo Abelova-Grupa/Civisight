@@ -1,66 +1,89 @@
 package com.abeliangroup.civisight.service;
 
-import com.abeliangroup.civisight.dto.ClassificationRequest;
-import com.abeliangroup.civisight.dto.ClassificationResponse;
+import com.abeliangroup.civisight.dto.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.util.UriBuilder;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
 import java.util.Base64;
+import java.util.function.Function;
 
 /**
  * Service responsible for communicating with the external API.
  */
 @Service
-public class AiApiService {
+public class AiApiService { private final WebClient webClient;
 
-    private final WebClient webClient;
+    // Use a constant for the property key and default URL
+    private static final String API_BASE_URL_PROPERTY = "${external.api.url:http://10.0.10.126:8000}";
 
-    // The base URL for the external API, injected from application properties
-    @Value("${external.api.url:http://10.0.10.126:8000/classify_report}")
-    private String apiUrl;
+    // Updated paths based on user's snippet
+    private static final String CLASSIFICATION_PATH = "/classify-problem";
+    private static final String REPORT_PATH = "/solana/report";
+    private static final String VOTE_PATH = "/solana/vote";
+    private static final String STATUS_PATH = "/status";
 
     /**
      * Constructor for Dependency Injection.
-     * @param webClient A WebClient instance, typically configured by Spring Boot.
+     * FIX: Injects the URL property directly and uses WebClient.create(apiUrl) 
+     * to guarantee the base URL is set correctly, preventing configuration issues.
      */
-    public AiApiService(WebClient webClient) {
-        this.webClient = webClient;
+    public AiApiService(@Value(API_BASE_URL_PROPERTY) String apiUrl) {
+        this.webClient = WebClient.create(apiUrl);
     }
 
-    /**
-     * Processes the input (description and image bytes) and sends the request
-     * to the external classification API.
-     * * @param description The text description to send.
-     * @param imageBytes The raw bytes of the image file.
-     * @return A Mono emitting the ExternalResponse DTO upon successful processing.
-     */
+    // --- 1. CLASSIFICATION POST METHOD ---
+
     public Mono<ClassificationResponse> sendClassificationRequest(String description, byte[] imageBytes) {
-
-        // 1. Convert image bytes to Base64 String as required by the DTO contract
         String base64Content = Base64.getEncoder().encodeToString(imageBytes);
-
-        // 2. Create the request body DTO
         ClassificationRequest requestBody = new ClassificationRequest(description, base64Content);
 
-        // 3. Make the non-blocking HTTP POST request using WebClient
         return webClient.post()
-            .uri(apiUrl)
+            .uri(CLASSIFICATION_PATH)
             .bodyValue(requestBody)
             .retrieve()
-
-            // Handle success (2xx response)
             .bodyToMono(ClassificationResponse.class)
-
-            // Handle API-specific errors (e.g., 4xx, 5xx)
-            .onErrorMap(e -> new ExternalApiException("Failed to communicate with external API: " + e.getMessage(), e));
+            .onErrorMap(e -> new ExternalApiException("Failed to communicate with classification API: " + e.getMessage(), e));
     }
 
-    // --- Helper classes for clean exception handling and WebClient configuration ---
+    // --- 2. BLOCKCHAIN REPORT POST METHOD ---
 
-    /**
-     * A custom unchecked exception for API communication failures.
-     */
+    public Mono<BlockchainReportResponse> sendReportToBlockchain(BlockchainReportRequest request) {
+        return webClient.post()
+            .uri(REPORT_PATH)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(BlockchainReportResponse.class)
+            .onErrorMap(e -> new ExternalApiException("Failed to send report to blockchain API: " + e.getMessage(), e));
+    }
+
+    // --- 3. BLOCKCHAIN VOTE POST METHOD ---
+
+    public Mono<BlockchainVoteResponse> sendVoteToBlockchain(BlockchainVoteRequest request) {
+        return webClient.post()
+            .uri(VOTE_PATH)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(BlockchainVoteResponse.class)
+            .onErrorMap(e -> new ExternalApiException("Failed to send vote to blockchain API: " + e.getMessage(), e));
+    }
+
+    // --- 4. SIMPLE GET METHOD ---
+
+    public Mono<String> getExternalStatus(String identifier) {
+        return webClient.get()
+            // FIX: Correctly using STATUS_PATH instead of REPORT_PATH
+            .uri(uriBuilder -> uriBuilder.path(STATUS_PATH).path("/{identifier}").build(identifier))
+            .retrieve()
+            .bodyToMono(String.class)
+            .onErrorMap(e -> new ExternalApiException("Failed to retrieve external status: " + e.getMessage(), e));
+    }
+
+    // --- EXCEPTION CLASS ---
+
     public static class ExternalApiException extends RuntimeException {
         public ExternalApiException(String message, Throwable cause) {
             super(message, cause);
