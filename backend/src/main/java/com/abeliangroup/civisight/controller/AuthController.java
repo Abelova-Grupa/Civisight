@@ -1,13 +1,16 @@
 package com.abeliangroup.civisight.controller;
 
 import com.abeliangroup.civisight.dto.AuthResponse;
+import com.abeliangroup.civisight.dto.BlockchainReportRequest;
 import com.abeliangroup.civisight.dto.LoginRequest;
 import com.abeliangroup.civisight.dto.RegistrationRequest;
 import com.abeliangroup.civisight.model.Citizen;
 import com.abeliangroup.civisight.repo.AdminRepository;
 import com.abeliangroup.civisight.repo.CitizenRepository;
+import com.abeliangroup.civisight.service.AiApiService;
 import com.abeliangroup.civisight.service.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -29,11 +33,16 @@ public class AuthController {
     private final AdminRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AiApiService aiApiService;
 
     @GetMapping("/debug-jwt")
-    public Map<String, Object> debugJwt(@AuthenticationPrincipal Jwt jwt) {
-        if (jwt == null) return Map.of("error", "No JWT detected");
-        return jwt.getClaims();
+    public boolean debugJwt(@AuthenticationPrincipal Jwt jwt) {
+        var aiResponse = aiApiService
+            .sendReportToBlockchain(new BlockchainReportRequest("1", "1"))
+            .blockOptional()
+            .orElseThrow();
+        log.info(aiResponse.getStatus());
+        return true;
     }
 
     @PostMapping("/register")
