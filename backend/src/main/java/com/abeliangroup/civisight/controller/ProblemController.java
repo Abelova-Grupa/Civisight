@@ -139,13 +139,11 @@ public class ProblemController {
 
         var aiResponse = aiApiService.sendClassificationRequest(description, imageFile.getBytes()).block();
         if(aiResponse.getStatus().equals("BAD_REQUEST")) throw new IllegalArgumentException("Description doesn't match the image.");
-        // TODO: Prepraviti kod tako da classification bude polje unutar issue-a i da se ne printuje nego cuva
-        // TODO: Takodje, izmeniti svuda gde treba
-        System.out.println(aiResponse.getClassification());
-
-        // TODO: Reward sistem: ako status nije BAD_REQUEST tj. AI ga je ocenio kao validnog, korisniku ulogovanom
-        // TODO: kojeg dobijas preko getCurrentCitizen() dodajes 10 poena i cuvas u bazi.
-
+        else{
+            citizen.setCurrentPoints(citizen.getCurrentPoints() + 10);
+            citizen.setTotalPoints(citizen.getTotalPoints() + 10);
+        }
+        issue.setIssueType(aiResponse.getClassification());
 
         if(aiResponse.getPriority().equals("LOW")) issue.setUrgency(Urgency.LOW);
         if(aiResponse.getPriority().equals("MEDIUM")) issue.setUrgency(Urgency.MEDIUM);
@@ -201,7 +199,11 @@ public class ProblemController {
         vote.setUp(value);
         vote.setDown(!value && value != null ? true : false);
 
-        if (value) problem.setUpvotes(problem.getUpvotes() + 1);
+        if (value) {
+            problem.setUpvotes(problem.getUpvotes() + 1);
+            citizen.setTotalPoints(citizen.getTotalPoints() + 0.1);
+            citizen.setCurrentPoints(citizen.getCurrentPoints() + 0.1);
+        }
         else problem.setDownvotes(problem.getDownvotes() + 1);
 
         voteRepository.save(vote);
@@ -325,5 +327,20 @@ public class ProblemController {
 
         problem.setStatus(Status.CANCELLED);
         return ProblemDTO.toDTO(problemRepository.save(problem));
+    }
+
+    @PreAuthorize("hasRole('CITIZEN')")
+    @PostMapping("/citizen/use-points")
+    public CitizenDTO usePoints(@RequestParam int points) {
+        Citizen citizen = getCurrentCitizen();
+
+        if (citizen.getCurrentPoints() < points) {
+            throw new IllegalArgumentException("Not enough points.");
+        }
+
+        citizen.setCurrentPoints(citizen.getCurrentPoints() - points);
+        citizenRepository.save(citizen);
+
+        return CitizenDTO.toDTO(citizen);
     }
 }

@@ -9,6 +9,7 @@ import lombok.Data;
 @Data
 public class IssueDTO extends ProblemDTO {
     private Urgency urgency;
+    private String issueType;
 
     // ENTITY → DTO
     public static IssueDTO toDTO(Issue issue) {

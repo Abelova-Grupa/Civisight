@@ -22,8 +22,8 @@ public class Citizen extends User {
     @Enumerated(EnumType.STRING)
     private Rank rank;
 
-    private Integer totalPoints = 0;
-    private Integer currentPoints = 0;
+    private Double totalPoints = 0.0;
+    private Double currentPoints = 0.0;
 
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL)
     private List<Problem> problems;
