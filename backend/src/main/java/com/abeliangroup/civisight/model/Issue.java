@@ -12,7 +12,5 @@ public class Issue extends Problem {
     @Enumerated(EnumType.STRING)
     private Urgency urgency;
 
-    // If you want IssueType later, add enum field here
-    // @Enumerated(EnumType.STRING)
-    // private IssueType issueType;
+    private String issueType;
 }
