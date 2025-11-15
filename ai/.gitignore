@@ -1,5 +1,5 @@
 gemini.env
-solidity.env
+solana.env
 id.json
 /.venv
 /test_images
