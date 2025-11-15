@@ -37,5 +37,6 @@ public class UserController {
         UserStatsDTO dto = new UserStatsDTO();
         dto.setCurrentPoints(citizen.getCurrentPoints());
         dto.setTotalPoints(citizen.getTotalPoints());
+        return dto;
     }
 }
