@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface VoteRepository extends JpaRepository<Vote, Long> {
     boolean existsByCitizenIdAndProblemId(Long citizenId, Long problemId);
     Optional<Vote> findByCitizenAndProblem(Citizen citizen, Problem problem);
+
 }

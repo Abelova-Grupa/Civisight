@@ -3,7 +3,9 @@ package com.abeliangroup.civisight.dto;
 import com.abeliangroup.civisight.model.Citizen;
 import com.abeliangroup.civisight.model.Problem;
 import com.abeliangroup.civisight.model.Status;
+import com.abeliangroup.civisight.repo.VoteRepository;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Set;
 
@@ -18,7 +20,7 @@ public class ProblemDTO {
     private Integer upvotes;
     private Integer downvotes;
     private Integer reports;
-
+    private Short userOpinion; // -1: downvote; 0: nothing; +1: upvoted
     private Status status;
 
     // ENTITY → DTO

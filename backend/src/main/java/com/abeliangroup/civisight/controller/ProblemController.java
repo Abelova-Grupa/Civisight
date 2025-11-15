@@ -6,7 +6,9 @@ import com.abeliangroup.civisight.repo.ProblemRepository;
 import com.abeliangroup.civisight.repo.CitizenRepository;
 import com.abeliangroup.civisight.repo.VoteRepository;
 import com.abeliangroup.civisight.service.AiApiService;
+import com.abeliangroup.civisight.service.VoteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -32,6 +34,7 @@ public class ProblemController {
     private final CitizenRepository citizenRepository;
     private final VoteRepository voteRepository;
     private final AiApiService aiApiService;
+    private final VoteService voteService;
 
     private Citizen getCurrentCitizen() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -58,9 +61,13 @@ public class ProblemController {
     @GetMapping
     public List<ProblemDTO> getAllProblems() {
         return problemRepository.findAll()
-                .stream()
-                .map(ProblemDTO::toDTO)
-                .collect(Collectors.toList());
+            .stream()
+            .map(problem -> {
+                ProblemDTO dto = ProblemDTO.toDTO(problem); // basic mapping
+                voteService.determineCurrentCitizensOpinion(problem, dto);
+                return dto;
+            })
+            .collect(Collectors.toList());
     }
 
     @PreAuthorize("hasRole('CITIZEN')")
@@ -92,7 +99,7 @@ public class ProblemController {
 
     @PreAuthorize("hasRole('CITIZEN')")
     @PostMapping(value="/suggestion", consumes = "multipart/form-data")
-    public SuggestionDTO createSuggestion(
+    public ResponseEntity<?> createSuggestion(
         @RequestParam String description,
         @RequestParam Double latitude,
         @RequestParam Double longitude,
@@ -113,12 +120,12 @@ public class ProblemController {
             suggestion.setImageUrl("/images/" + fileName); // store relative path
         }
 
-        return SuggestionDTO.toDTO(problemRepository.save(suggestion));
+        return new ResponseEntity<>(SuggestionDTO.toDTO(problemRepository.save(suggestion)), HttpStatus.CREATED);
     }
 
     @PreAuthorize("hasRole('CITIZEN')")
     @PostMapping(value="/issue", consumes = "multipart/form-data")
-    public IssueDTO createIssue(
+    public ResponseEntity<ProblemDTO> createIssue(
         @RequestParam String description,
         @RequestParam Double latitude,
         @RequestParam Double longitude,
@@ -138,7 +145,9 @@ public class ProblemController {
         }
 
         var aiResponse = aiApiService.sendClassificationRequest(description, imageFile.getBytes()).block();
-        if(aiResponse.getStatus().equals("BAD_REQUEST")) throw new IllegalArgumentException("Description doesn't match the image.");
+        if(aiResponse.getStatus().equals("BAD_REQUEST")) {
+            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+        }
         else{
             citizen.setCurrentPoints(citizen.getCurrentPoints() + 10);
             citizen.setTotalPoints(citizen.getTotalPoints() + 10);
@@ -150,7 +159,7 @@ public class ProblemController {
         if(aiResponse.getPriority().equals("HIGH")) issue.setUrgency(Urgency.HIGH);
 
 
-        return IssueDTO.toDTO(problemRepository.save(issue));
+        return new ResponseEntity<>(SuggestionDTO.toDTO(problemRepository.save(issue)), HttpStatus.CREATED);
     }
 
     // Helper method to save image
@@ -172,100 +181,100 @@ public class ProblemController {
         return fileName.substring(fileName.lastIndexOf(".") + 1);
     }
 
-    @PostMapping("/{id}/upvote")
-    @PreAuthorize("hasRole('CITIZEN')")
-    public ResponseEntity<?> upvote(@PathVariable Long id, @RequestParam Boolean value) {
-        Problem problem = problemRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Problem not found"));
-        Citizen citizen = getCurrentCitizen();
-
-        Vote vote = voteRepository.findByCitizenAndProblem(citizen, problem)
-                .orElseGet(() -> {
-                    Vote v = new Vote();
-                    v.setCitizen(citizen);
-                    v.setProblem(problem);
-                    v.setUp(false);
-                    v.setDown(false);
-                    return v;
-                });
-
-        if ((value && vote.isUp()) || (!value && vote.isDown())) {
-            return ResponseEntity.ok("Already " + (value ? "upvoted" : "downvoted") + "!");
-        }
-
-        if (vote.isUp()) problem.setUpvotes(problem.getUpvotes() - 1);
-        if (vote.isDown()) problem.setDownvotes(problem.getDownvotes() - 1);
-
-        vote.setUp(value);
-        vote.setDown(!value && value != null ? true : false);
-
-        if (value) {
-            problem.setUpvotes(problem.getUpvotes() + 1);
-            citizen.setTotalPoints(citizen.getTotalPoints() + 0.1);
-            citizen.setCurrentPoints(citizen.getCurrentPoints() + 0.1);
-        }
-        else problem.setDownvotes(problem.getDownvotes() + 1);
-
-        voteRepository.save(vote);
-        problemRepository.save(problem);
-
-        return ResponseEntity.ok(
-                (value ? "Upvote" : "Downvote") + " " + (value ? "added" : "added") +
-                        ". Current count: Upvotes=" + problem.getUpvotes() + ", Downvotes=" + problem.getDownvotes()
-        );
-    }
-
-
-
-    // Adds upvote on true value, otherwise removes upvote
 //    @PostMapping("/{id}/upvote")
 //    @PreAuthorize("hasRole('CITIZEN')")
-//    public boolean upvote(@PathVariable Long id, @RequestParam Boolean value) {
-//        Vote vote;
+//    public ResponseEntity<?> upvote(@PathVariable Long id, @RequestParam Boolean value) {
+//        Problem problem = problemRepository.findById(id)
+//                .orElseThrow(() -> new NoSuchElementException("Problem not found"));
 //        Citizen citizen = getCurrentCitizen();
-//        Problem problem = problemRepository.findById(id).orElseThrow(IllegalArgumentException::new);
 //
-//        if(!voteRepository.existsByCitizenIdAndProblemId(citizen.getId(), id)) {
-//            vote = new Vote();
-//            vote.setCitizen(citizen);
-//            vote.setProblem(problem);
-//        } else {
-//            vote = voteRepository.findByCitizenAndProblem(citizen, problem)
-//                .orElseThrow(IllegalArgumentException::new);
+//        Vote vote = voteRepository.findByCitizenAndProblem(citizen, problem)
+//                .orElseGet(() -> {
+//                    Vote v = new Vote();
+//                    v.setCitizen(citizen);
+//                    v.setProblem(problem);
+//                    v.setUp(false);
+//                    v.setDown(false);
+//                    return v;
+//                });
+//
+//        if ((value && vote.isUp()) || (!value && vote.isDown())) {
+//            return ResponseEntity.ok("Already " + (value ? "upvoted" : "downvoted") + "!");
 //        }
+//
+//        if (vote.isUp()) problem.setUpvotes(problem.getUpvotes() - 1);
+//        if (vote.isDown()) problem.setDownvotes(problem.getDownvotes() - 1);
+//
 //        vote.setUp(value);
-//        if(value){
+//        vote.setDown(!value && value != null ? true : false);
+//
+//        if (value) {
 //            problem.setUpvotes(problem.getUpvotes() + 1);
-//        } else problem.setUpvotes(problem.getUpvotes() - 1);
-//        problemRepository.save(problem);
+//            citizen.setTotalPoints(citizen.getTotalPoints() + 0.1);
+//            citizen.setCurrentPoints(citizen.getCurrentPoints() + 0.1);
+//        }
+//        else problem.setDownvotes(problem.getDownvotes() + 1);
+//
 //        voteRepository.save(vote);
-//        return true;
+//        problemRepository.save(problem);
+//
+//        return ResponseEntity.ok(
+//                (value ? "Upvote" : "Downvote") + " " + (value ? "added" : "added") +
+//                        ". Current count: Upvotes=" + problem.getUpvotes() + ", Downvotes=" + problem.getDownvotes()
+//        );
 //    }
 
-    // Adds upvote on true value, otherwise removes upvote
-//    @PostMapping("/{id}/downvote")
-//    @PreAuthorize("hasRole('CITIZEN')")
-//    public boolean downvote(@PathVariable Long id, @RequestParam Boolean value) {
-//        Vote vote;
-//        Citizen citizen = getCurrentCitizen();
-//        Problem problem = problemRepository.findById(id).orElseThrow(IllegalArgumentException::new);
-//
-//        if(!voteRepository.existsByCitizenIdAndProblemId(citizen.getId(), id)) {
-//            vote = new Vote();
-//            vote.setCitizen(citizen);
-//            vote.setProblem(problem);
-//        } else {
-//            vote = voteRepository.findByCitizenAndProblem(citizen, problem)
-//                .orElseThrow(IllegalArgumentException::new);
-//        }
-//        vote.setDown(value);
-//        if(value){
-//            problem.setDownvotes(problem.getDownvotes() + 1);
-//        } else problem.setDownvotes(problem.getDownvotes() - 1);
-//        problemRepository.save(problem);
-//        voteRepository.save(vote);
-//        return true;
-//    }
+
+
+//     Adds upvote on true value, otherwise removes upvote
+    @PostMapping("/{id}/upvote")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public boolean upvote(@PathVariable Long id, @RequestBody Boolean value) {
+        Vote vote;
+        Citizen citizen = getCurrentCitizen();
+        Problem problem = problemRepository.findById(id).orElseThrow(IllegalArgumentException::new);
+
+        if(!voteRepository.existsByCitizenIdAndProblemId(citizen.getId(), id)) {
+            vote = new Vote();
+            vote.setCitizen(citizen);
+            vote.setProblem(problem);
+        } else {
+            vote = voteRepository.findByCitizenAndProblem(citizen, problem)
+                .orElseThrow(IllegalArgumentException::new);
+        }
+        vote.setUp(value);
+        if(value){
+            problem.setUpvotes(problem.getUpvotes() + 1);
+        } else problem.setUpvotes(problem.getUpvotes() - 1);
+        problemRepository.save(problem);
+        voteRepository.save(vote);
+        return true;
+    }
+
+//     Adds upvote on true value, otherwise removes upvote
+    @PostMapping("/{id}/downvote")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public boolean downvote(@PathVariable Long id, @RequestBody Boolean value) {
+        Vote vote;
+        Citizen citizen = getCurrentCitizen();
+        Problem problem = problemRepository.findById(id).orElseThrow(IllegalArgumentException::new);
+
+        if(!voteRepository.existsByCitizenIdAndProblemId(citizen.getId(), id)) {
+            vote = new Vote();
+            vote.setCitizen(citizen);
+            vote.setProblem(problem);
+        } else {
+            vote = voteRepository.findByCitizenAndProblem(citizen, problem)
+                .orElseThrow(IllegalArgumentException::new);
+        }
+        vote.setDown(value);
+        if(value){
+            problem.setDownvotes(problem.getDownvotes() + 1);
+        } else problem.setDownvotes(problem.getDownvotes() - 1);
+        problemRepository.save(problem);
+        voteRepository.save(vote);
+        return true;
+    }
 
     @PostMapping("/{id}/report")
     @PreAuthorize("hasRole('CITIZEN')")

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.StaleStateException;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +35,7 @@ public abstract class Problem {
     private Citizen author;
 
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private Status status = Status.REPORTED;
 
     @ManyToMany(mappedBy = "reportedProblems")
     @JsonBackReference
