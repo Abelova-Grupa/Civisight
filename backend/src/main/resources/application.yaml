@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: civisight
+  datasource:
+    url: jdbc:postgresql://localhost:5432/civisight
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://dev-p4s5papu3y1thymm.uk.auth0.com/
+          jwk-set-uri: https://dev-p4s5papu3y1thymm.uk.auth0.com/.well-known/jwks.json

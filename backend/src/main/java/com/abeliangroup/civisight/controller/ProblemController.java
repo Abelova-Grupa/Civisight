@@ -23,6 +23,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/problems")
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class ProblemController {
 
     private final ProblemRepository problemRepository;
