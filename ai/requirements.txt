@@ -2,16 +2,18 @@
 fastapi
 uvicorn
 
-# Data Validation and Modeling
+# Data Validation
 pydantic
 
 # Google Gemini API
 google-genai
 
-# Environment Variable Management
+# Environment Management
 python-dotenv
 
-# Solana Interaction
+# Solana / Anchor
 anchorpy
 solana
 solders
+httpx
+construct
