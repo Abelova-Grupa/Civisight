@@ -215,7 +215,21 @@ public class ProblemController {
         );
     }
 
+    @GetMapping("/{id}/upvotes")
+    public ResponseEntity<Integer> getUpvotes(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Problem not found"));
 
+        return ResponseEntity.ok(problem.getUpvotes());
+    }
+
+    @GetMapping("/{id}/downvotes")
+    public ResponseEntity<Integer> getDownvotes(@PathVariable Long id) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Problem not found"));
+
+        return ResponseEntity.ok(problem.getDownvotes());
+    }
 
     // Adds upvote on true value, otherwise removes upvote
 //    @PostMapping("/{id}/upvote")
