@@ -13,6 +13,9 @@ from solana_interface import (
     get_report_sync,
 )
 
+from typing import List
+from solidity_interface import create_report_on_chain, get_reports_from_chain
+
 
 # --- Pydantic modeli za striktnu validaciju ulaza ---
 
@@ -41,6 +44,18 @@ class VotePayload(BaseModel):
     user_id: str  # off-chain identifikator; on-chain glasa uvek backend wallet
     vote: int
 
+class ReportIn(BaseModel):
+    lat: float
+    lon: float
+    priority: int
+
+
+class ReportOut(BaseModel):
+    lat: float
+    lon: float
+    priority: int
+    createdAt: int
+    reporter: str
 
 # --- INICIJALIZACIJA ---
 
@@ -175,6 +190,33 @@ def get_report(report_id: str):
                 "details": str(e),
             },
         )
+
+@app.post("/solidity/report")
+def create_report(report: ReportIn):
+    """
+    Prima JSON od AI/backend-a i šalje novi report na blockchain.
+    """
+    result = create_report_on_chain(
+        lat=report.lat,
+        lon=report.lon,
+        priority=report.priority,
+    )
+
+    return {
+        "status": "ok",
+        "tx_hash": result["tx_hash"],
+        "blockNumber": result["blockNumber"],
+    }
+
+
+@app.get("/solidity/reports", response_model=List[ReportOut])
+def get_reports():
+    """
+    Vraća sve report-ove iz Solidity kontrakta u čistom JSON obliku.
+    """
+    raw = get_reports_from_chain()
+    # FastAPI + Pydantic će sam mapirati dict -> ReportOut
+    return raw
 
 
 # --- POKRETANJE SERVERA ---
