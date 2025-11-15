@@ -74,6 +74,12 @@ public class ProblemController {
                 .toList();
     }
 
+    @GetMapping("/reported/count")
+    public ResponseEntity<Integer> getReportedProblemsCount() {
+        int count = getReportedProblems().size();
+        return ResponseEntity.ok(count);
+    }
+
     // Get problem by ID
     @GetMapping("/{id}")
     public ProblemDTO getProblemById(@PathVariable Long id) {
