@@ -69,6 +69,8 @@ public class ProblemController {
     @PostMapping(value="/suggestion", consumes = "multipart/form-data")
     public Suggestion createSuggestion(
         @RequestParam String description,
+        @RequestParam Double latitude,
+        @RequestParam Double longitude,
         @RequestParam(required = false) MultipartFile imageFile
     ) throws Exception {
 
@@ -78,6 +80,8 @@ public class ProblemController {
         Suggestion suggestion = new Suggestion();
         suggestion.setDescription(description);
         suggestion.setAuthor(citizen);
+        suggestion.setLatitude(latitude);
+        suggestion.setLongitude(longitude);
 
         if (imageFile != null && !imageFile.isEmpty()) {
             String fileName = saveImage(imageFile);
@@ -101,7 +105,8 @@ public class ProblemController {
         Issue issue = new Issue();
         issue.setDescription(description);
         issue.setAuthor(citizen);
-
+        issue.setLatitude(latitude);
+        issue.setLongitude(longitude);
         if (imageFile != null && !imageFile.isEmpty()) {
             String fileName = saveImage(imageFile);
             issue.setImageUrl("/images/" + fileName);
