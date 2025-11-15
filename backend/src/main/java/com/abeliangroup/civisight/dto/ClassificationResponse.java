@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class ExternalResponse {
+public class ClassificationResponse {
 
     private String status;
     private String classification;

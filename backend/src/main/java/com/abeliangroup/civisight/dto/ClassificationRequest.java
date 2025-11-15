@@ -7,13 +7,13 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class ExternalRequest {
+public class ClassificationRequest {
 
     // Textual description of the problem/request
     private String description;
 
     // The image data, typically sent as a Base64 encoded string
     // This allows it to be easily included in a JSON or form-data request field.
-    private String content;
+    private String image_base64;
 
 }
