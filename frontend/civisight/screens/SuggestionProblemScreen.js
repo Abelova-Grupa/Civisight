@@ -15,6 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import MapView, { Marker } from "react-native-maps";
 import "react-native-get-random-values"
+import * as SecureStore from 'expo-secure-store'; 
 
 import {v4 as uuidv4 } from 'uuid'
 
@@ -57,134 +58,137 @@ const SuggestionProblemScreen = () => {
     }
   }, [type]);
 
-  const fetchLocation = async () => {
-    setLocationAddress("Fetching location...");
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setLocationAddress("Location permission denied.");
+    const fetchLocation = async () => {
+      setLocationAddress("Fetching location...");
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setLocationAddress("Location permission denied.");
+          return;
+        }
+
+        // High accuracy to pinpoint the problem spot
+        const locationResult = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        setLocation(locationResult);
+
+        // Reverse geocode to get a readable address
+        const geocode = await Location.reverseGeocodeAsync({
+          latitude: locationResult.coords.latitude,
+          longitude: locationResult.coords.longitude,
+        });
+
+        if (geocode && geocode.length > 0) {
+          const address = geocode[0];
+          setLocationAddress(
+            `${address.street || ""}, ${
+              address.city || address.subregion || ""
+            }, ${address.region || ""}`
+          );
+        } else {
+          setLocationAddress(
+            "Location found, but address could not be resolved."
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching location:", error);
+        setLocationAddress("Could not get location. Check device settings.");
+      }
+    };
+
+    // --- Image Picker (Camera ONLY) ---
+    const takePicture = async () => {
+      let result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+      });
+
+      if (!result.canceled) {
+        setImageUri(result.assets[0].uri);
+      }
+    };
+
+    // --- Handle Post Submission ---
+    const handlePost = async () => {
+      if (!description.trim()) {
+        Alert.alert("Validation Error", "Description cannot be empty.");
         return;
       }
 
-      // High accuracy to pinpoint the problem spot
-      const locationResult = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      setLocation(locationResult);
-
-      // Reverse geocode to get a readable address
-      const geocode = await Location.reverseGeocodeAsync({
-        latitude: locationResult.coords.latitude,
-        longitude: locationResult.coords.longitude,
-      });
-
-      if (geocode && geocode.length > 0) {
-        const address = geocode[0];
-        setLocationAddress(
-          `${address.street || ""}, ${
-            address.city || address.subregion || ""
-          }, ${address.region || ""}`
-        );
-      } else {
-        setLocationAddress(
-          "Location found, but address could not be resolved."
-        );
+      if (type === "problem" && !imageUri) {
+        Alert.alert("Validation Error", "Please take a picture of the problem.");
+        return;
       }
-    } catch (error) {
-      console.error("Error fetching location:", error);
-      setLocationAddress("Could not get location. Check device settings.");
-    }
-  };
 
-  // --- Image Picker (Camera ONLY) ---
-  const takePicture = async () => {
-    let result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.7,
-    });
+      setLoading(true);
 
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-    }
-  };
+      // --- START: API Call Simulation ---
+      const formData = new FormData();
 
-  // --- Handle Post Submission ---
-  const handlePost = async () => {
-    if (!description.trim()) {
-      Alert.alert("Validation Error", "Description cannot be empty.");
-      return;
-    }
+      // 1. Append Text Fields
+      formData.append("type", type);
+      formData.append("description", description.trim());
+      formData.append("locationAddress", locationAddress);
+      formData.append("timestamp", new Date().toISOString());
 
-    if (type === "problem" && !imageUri) {
-      Alert.alert("Validation Error", "Please take a picture of the problem.");
-      return;
-    }
-
-    setLoading(true);
-
-    // --- START: API Call Simulation ---
-    const formData = new FormData();
-
-    // 1. Append Text Fields
-    formData.append("type", type);
-    formData.append("description", description.trim());
-    formData.append("locationAddress", locationAddress);
-    formData.append("timestamp", new Date().toISOString());
-
-    // Append raw coordinates if available
-    if (location) {
-      formData.append("latitude", location.coords.latitude);
-      formData.append("longitude", location.coords.longitude);
-    }
-
-    // 2. Append Image File (Conditional on 'problem' type)
-    if (type === "problem" && imageUri) {
-      // You MUST provide a proper filename and MIME type for the server to recognize the file.
-      const uriParts = imageUri.split(".");
-      const fileType = uriParts[uriParts.length - 1]; // e.g., 'jpg' or 'png'
-      const uuid = uuidv4()
+      // Append raw coordinates if available
+      if (location) {
+        formData.append("latitude", location.coords.latitude);
+        formData.append("longitude", location.coords.longitude);
+      }
       
-      formData.append("file", {
-        uri: imageUri,
-        name: `${uuid}.${fileType}`, 
-        type: `image/${fileType}`, 
-      });
-    }
-
-    try {
-      const endpoint = type === "problem" ? "problems" : "issues"
-      const response = await fetch(`http://localhost:8080/api/${endpoint}`, {
-        method: "POST",
-        // DO NOT set the 'Content-Type' header.
-        // Fetch/RN will automatically set the correct 'multipart/form-data'
-        // header, including the necessary boundary, when sending a FormData object.
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Server responded with status: ${response.status}`
-        );
+      // 2. Append Image File (Conditional on 'problem' type)
+      if (type === "problem" && imageUri) {
+        // You MUST provide a proper filename and MIME type for the server to recognize the file.
+        const uriParts = imageUri.split(".");
+        const fileType = uriParts[uriParts.length - 1]; // e.g., 'jpg' or 'png'
+        const uuid = uuidv4()
+        
+        formData.append("imageFile  ", {
+          uri: imageUri,
+          name: `${uuid}.${fileType}`, 
+          type: `image/${fileType}`, 
+        });
       }
 
-      // Handle success response (e.g., parsing token or confirmation)
-      // const data = await response.json();
+      try {
+        const endpoint = type === "problem" ? "issue" : "suggestion"
+        const token = await SecureStore.getItemAsync("user_jwt")
+        const response = await fetch(`http://10.0.10.166:8080/api/problems/${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Authorization" : `Bearer ${token}`
+          },
+          // DO NOT set the 'Content-Type' header.
+          // Fetch/RN will automatically set the correct 'multipart/form-data'
+          // header, including the necessary boundary, when sending a FormData object.
+          body: formData,
+        });
 
-      Alert.alert(
-        "Success",
-        `${type === "problem" ? "Problem" : "Suggestion"} posted successfully!`
-      );
-      navigation.navigate("Main");
-    } catch (error) {
-      console.error("Submission Error:", error);
-      Alert.alert("Error", `Failed to submit post: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
+        if (!response.ok) {
+          alert(response.status)
+          throw new Error(
+            response.status
+          );
+        }
+
+        // Handle success response (e.g., parsing token or confirmation)
+        // const data = await response.json();
+
+        Alert.alert(
+          "Success",
+          `${type === "problem" ? "Problem" : "Suggestion"} posted successfully!`
+        );
+        navigation.navigate("Main");
+      } catch (error) {
+        console.error("Submission Error:", error);
+        Alert.alert("Error", `Failed to submit post: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
 
     console.log("Submitting:", postData);
     // --- END: API Call Simulation ---

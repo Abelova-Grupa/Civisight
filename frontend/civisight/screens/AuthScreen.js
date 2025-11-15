@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   View, 
@@ -18,10 +18,10 @@ const AuthScreen = ({navigation}) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false); 
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const checkTokenAndNavigate = async () => {
       try {
-        const jwt = await SecureStore.getItemAsync("user_jwt"); 
+        const jwt = await SecureStore.getItemAsync("user_jwt");
         if (jwt) {
           navigation.navigate('Main');
         }
@@ -42,7 +42,7 @@ const AuthScreen = ({navigation}) => {
 
   const handleLogin = async () => {
     setLoading(true);
-    const url = "http://localhost:8080/auth/login"
+    const url = "http://10.0.10.166:8080/auth/login"
     const req = {
       method: 'POST',
       headers: {
@@ -64,8 +64,7 @@ const AuthScreen = ({navigation}) => {
     const data = await res.json()
     if(data) {
       setLoading(false);
-      alert('Successfull login')
-      SecureStore.setItemAsync(data.token)
+      SecureStore.setItemAsync("user_jwt",data.token)
       navigation.navigate('Main')
     }
   };
