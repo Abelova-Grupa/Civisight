@@ -11,7 +11,6 @@ import {
   Alert 
 } from 'react-native';
 
-import * as SecureStore from 'expo-secure-store';   
 
 const RegistrationScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -28,7 +27,7 @@ const RegistrationScreen = ({ navigation }) => {
 
     setLoading(true);
     try{
-        const url = "http://localhost:8080/auth/register"
+        const url = "http://10.0.10.237:8080/auth/register"
         const req = {
           method: 'POST',
           headers: {
@@ -48,15 +47,19 @@ const RegistrationScreen = ({ navigation }) => {
         }
 
         const data = await res.json()
-        await SecureStore.setItemAsync("user_jwt",data.token)
+        // await SecureStore.setItemAsync("user_jwt",data.token)
 
 
     }catch(error) {
         console.error(error.message)
+        return
     }
     setLoading(false);
-    
-    Alert.alert('Uspeh', 'Registracija uspešna!');
+    setFirstName('')
+    setLastName('')
+    setEmail('')
+    setPassword('')
+    navigation.navigate('Login')
   };
 
   return (

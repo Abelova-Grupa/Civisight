@@ -25,7 +25,6 @@ import Post from "./Post";
 
 function Posts() {
   const handleReport = (postId) => {
-    // In a real app, this would navigate to the Report form or open a modal
     Alert.alert("Report Sent", `You reported issue ID: ${postId}. Thank you.`);
   };
 
