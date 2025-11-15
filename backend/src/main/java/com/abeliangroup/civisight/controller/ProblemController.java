@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/problems")
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class ProblemController {
 
     private final ProblemRepository problemRepository;
