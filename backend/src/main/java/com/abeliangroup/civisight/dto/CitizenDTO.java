@@ -36,9 +36,18 @@ public class CitizenDTO {
         dto.setEmail(citizen.getEmail());
         dto.setPassword(citizen.getPassword());
 
+        if(citizen.getTotalPoints()<500) {
+            citizen.setRank(Rank.BEGINNER);
+        } else if (citizen.getTotalPoints()<1000) {
+            citizen.setRank(Rank.OBSERVER);
+        } else if (citizen.getTotalPoints()<3000) {
+            citizen.setRank(Rank.SPOTTER);
+        } else if (citizen.getTotalPoints()<8000) {
+            citizen.setRank(Rank.SURVEYOR);
+        } else citizen.setRank(Rank.CIVIC_CHAMPION);
         dto.setRank(citizen.getRank());
-        dto.setTotalPoints(citizen.getTotalPoints());
-        dto.setCurrentPoints(citizen.getCurrentPoints());
+        dto.setTotalPoints((int) Math.floor(citizen.getTotalPoints()));
+        dto.setCurrentPoints((int)Math.floor(citizen.getCurrentPoints()));
 
         dto.setVotes(citizen.getVotes());
         dto.setRoles(citizen.getRoles());
@@ -57,8 +66,8 @@ public class CitizenDTO {
         citizen.setPassword(dto.getPassword());
 
         citizen.setRank(dto.getRank());
-        citizen.setTotalPoints(dto.getTotalPoints());
-        citizen.setCurrentPoints(dto.getCurrentPoints());
+        citizen.setTotalPoints(Double.valueOf(dto.getTotalPoints()));
+        citizen.setCurrentPoints(Double.valueOf(dto.getCurrentPoints()));
 
         citizen.setRoles(dto.getRoles());
 
