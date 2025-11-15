@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   View, 
   Text, 
-  TextInput, 
+  TextInput,
+  Image, 
   TouchableOpacity, 
-  StyleSheet, 
+  StyleSheet,  
   KeyboardAvoidingView, 
   Platform 
 } from 'react-native';
@@ -193,6 +194,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 3,
+  },
+  logo: {
+    width: 150, // Adjust as needed
+    height: 150, // Adjust as needed
+    marginBottom: 30, // Space below the logo
+    alignSelf: 'center', // Center the logo horizontally
   },
   buttonText: {
     color: '#FFFFFF',
