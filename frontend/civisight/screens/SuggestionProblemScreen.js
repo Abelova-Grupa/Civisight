@@ -9,6 +9,8 @@ import {
   Image,
   Alert,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
@@ -18,6 +20,7 @@ import "react-native-get-random-values"
 import * as SecureStore from 'expo-secure-store'; 
 
 import {v4 as uuidv4 } from 'uuid'
+import StatusPopup from "../components/StatusPopup";
 
 const SuggestionProblemScreen = () => {
   const navigation = useNavigation();
@@ -30,6 +33,9 @@ const SuggestionProblemScreen = () => {
   const [locationAddress, setLocationAddress] = useState(
     "Fetching location..."
   );
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupStatus, setPopupStatus] = useState(null);
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -169,23 +175,20 @@ const SuggestionProblemScreen = () => {
         });
 
         if (!response.ok) {
-          alert(response.status)
           throw new Error(
             response.status
           );
         }
 
-        // Handle success response (e.g., parsing token or confirmation)
-        // const data = await response.json();
+        setPopupStatus(responseStatus);
+        setShowPopup(true);
 
-        Alert.alert(
-          "Success",
-          `${type === "problem" ? "Problem" : "Suggestion"} posted successfully!`
-        );
         navigation.navigate("Main");
       } catch (error) {
-        console.error("Submission Error:", error);
-        Alert.alert("Error", `Failed to submit post: ${error.message}`);
+        const status = parseInt(error.message) || 500; 
+
+        setPopupStatus(status);
+        setShowPopup(true);
       } finally {
         setLoading(false);
       }
@@ -211,118 +214,127 @@ const SuggestionProblemScreen = () => {
     : null;
 
   return (
+      <View style={styles.flexContainer}>
+
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <Text style={styles.title}>
-        Submit {type === "problem" ? "a Problem" : "a Suggestion"}
-      </Text>
+        <Text style={styles.title}>
+          Submit {type === "problem" ? "a Problem" : "a Suggestion"}
+        </Text>
 
-      {/* Type Selection */}
-      <View style={styles.typeSelector}>
-        <TouchableOpacity
-          style={[
-            styles.typeButton,
-            type === "suggestion" && styles.typeButtonActive,
-          ]}
-          onPress={() => setType("suggestion")}
-        >
-          <Text
+        {/* Type Selection */}
+        <View style={styles.typeSelector}>
+          <TouchableOpacity
             style={[
-              styles.typeButtonText,
-              type === "suggestion" && styles.typeButtonTextActive,
+              styles.typeButton,
+              type === "suggestion" && styles.typeButtonActive,
             ]}
+            onPress={() => setType("suggestion")}
           >
-            Suggestion
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.typeButton,
-            type === "problem" && styles.typeButtonActive,
-          ]}
-          onPress={() => setType("problem")}
-        >
-          <Text
-            style={[
-              styles.typeButtonText,
-              type === "problem" && styles.typeButtonTextActive,
-            ]}
-          >
-            Problem
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Problem Specific Fields (Conditional) */}
-      {type === "problem" && (
-        <View style={styles.problemSection}>
-          {/* Camera Button */}
-          <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
-            <Text style={styles.cameraButtonText}>Take Picture of Problem</Text>
-          </TouchableOpacity>
-
-          {/* Image Preview */}
-          {imageUri && (
-            <Image source={{ uri: imageUri }} style={styles.previewImage} />
-          )}
-
-          {/* Map View */}
-          {initialRegion ? (
-            <MapView
-              style={styles.map}
-              initialRegion={initialRegion}
-              showsUserLocation={true}
-              // Disable user interaction if map is just for display
-              pitchEnabled={false}
-              rotateEnabled={false}
-              scrollEnabled={false}
-              zoomEnabled={false}
+            <Text
+              style={[
+                styles.typeButtonText,
+                type === "suggestion" && styles.typeButtonTextActive,
+              ]}
             >
-              <Marker
-                coordinate={initialRegion}
-                title="Problem Location"
-                description="Taken at this spot"
-              />
-            </MapView>
-          ) : (
-            <View style={styles.mapPlaceholder}>
-              <Text style={styles.mapPlaceholderText}>
-                Map loading or location unavailable...
-              </Text>
-            </View>
-          )}
-
-          {/* Location Text */}
-          <Text style={styles.locationLabel}>Current Location:</Text>
-          <Text style={styles.locationText}>{locationAddress}</Text>
+              Suggestion
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.typeButton,
+              type === "problem" && styles.typeButtonActive,
+            ]}
+            onPress={() => setType("problem")}
+          >
+            <Text
+              style={[
+                styles.typeButtonText,
+                type === "problem" && styles.typeButtonTextActive,
+              ]}
+            >
+              Problem
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      {/* Description Input */}
-      <TextInput
-        style={styles.descriptionInput}
-        placeholder={`Describe your ${type}...`}
-        multiline
-        numberOfLines={5}
-        value={description}
-        onChangeText={setDescription}
-      />
+        {/* Problem Specific Fields (Conditional) */}
+        {type === "problem" && (
+          <View style={styles.problemSection}>
+            {/* Camera Button */}
+            <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
+              <Text style={styles.cameraButtonText}>Take Picture of Problem</Text>
+            </TouchableOpacity>
 
-      {/* Post Button */}
-      <TouchableOpacity
-        style={styles.postButton}
-        onPress={handlePost}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.postButtonText}>Post</Text>
+            {/* Image Preview */}
+            {imageUri && (
+              <Image source={{ uri: imageUri }} style={styles.previewImage} />
+            )}
+
+            {/* Map View */}
+            {initialRegion ? (
+              <MapView
+                style={styles.map}
+                initialRegion={initialRegion}
+                showsUserLocation={true}
+                // Disable user interaction if map is just for display
+                pitchEnabled={false}
+                rotateEnabled={false}
+                scrollEnabled={false}
+                zoomEnabled={false}
+              >
+                <Marker
+                  coordinate={initialRegion}
+                  title="Problem Location"
+                  description="Taken at this spot"
+                />
+              </MapView>
+            ) : (
+              <View style={styles.mapPlaceholder}>
+                <Text style={styles.mapPlaceholderText}>
+                  Map loading or location unavailable...
+                </Text>
+              </View>
+            )}
+
+            {/* Location Text */}
+            <Text style={styles.locationLabel}>Current Location:</Text>
+            <Text style={styles.locationText}>{locationAddress}</Text>
+          </View>
         )}
-      </TouchableOpacity>
+
+        {/* Description Input */}
+        <TextInput
+          style={styles.descriptionInput}
+          placeholder={`Describe your ${type}...`}
+          multiline
+          numberOfLines={5}
+          value={description}
+          onChangeText={setDescription}
+          />
+
+        {/* Post Button */}
+        <TouchableOpacity
+          style={styles.postButton}
+          onPress={handlePost}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.postButtonText}>Post</Text>
+          )}
+        </TouchableOpacity>
     </ScrollView>
+    <StatusPopup
+        statusCode={popupStatus}
+        isVisible={showPopup}
+        onClose={() => setShowPopup(false)}
+      />
+        
+      </View>
   );
 };
 
@@ -331,6 +343,9 @@ export default SuggestionProblemScreen;
 // --- Styles ---
 
 const styles = StyleSheet.create({
+  flexContainer: {
+    flex: 1, // Dodali smo ovaj View za ispravno pozicioniranje
+  },
   cameraButton: {
     backgroundColor: "#28a745", // Green
     paddingVertical: 12,

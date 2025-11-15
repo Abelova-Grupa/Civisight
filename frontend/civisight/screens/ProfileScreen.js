@@ -3,7 +3,6 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ScrollView, 
   Image, 
   TouchableOpacity,
 } from 'react-native';
@@ -12,8 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Podaci za simulaciju ---
 const userData = {
-  name: "XioFik Hasan",
-  location: "Sterling, Brooklyn",
+  name: "Luka Dervišević",
+  location: "Belgrade, Serbia",
   posts: 125, // Promenjeno iz AVG. rating
   rank: "Top 15%",
   nextRankProgress: 0.75, // 75% popunjenosti
@@ -94,7 +93,7 @@ const ProfileScreen = () => {
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingIconText}>
               <Ionicons name="person-outline" size={24} color="#333" />
-              <Text style={styles.settingText}>Profile Setting</Text>
+              <Text style={styles.settingText}>Profile Settings</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </TouchableOpacity>

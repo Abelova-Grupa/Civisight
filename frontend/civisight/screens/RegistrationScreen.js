@@ -27,7 +27,7 @@ const RegistrationScreen = ({ navigation }) => {
 
     setLoading(true);
     try{
-        const url = "http://10.0.10.237:8080/auth/register"
+        const url = "http://10.0.10.161:8080/auth/register"
         const req = {
           method: 'POST',
           headers: {
@@ -122,7 +122,7 @@ const RegistrationScreen = ({ navigation }) => {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
+} 
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F5F8FA' },
