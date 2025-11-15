@@ -10,3 +10,8 @@ google-genai
 
 # Environment Variable Management
 python-dotenv
+
+# Solana Interaction
+anchorpy
+solana
+solders
