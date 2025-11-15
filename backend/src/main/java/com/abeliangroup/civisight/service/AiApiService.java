@@ -21,7 +21,7 @@ public class AiApiService { private final WebClient webClient;
     private static final String API_BASE_URL_PROPERTY = "${external.api.url:http://10.0.10.126:8000}";
 
     // Updated paths based on user's snippet
-    private static final String CLASSIFICATION_PATH = "/classify-problem";
+    private static final String CLASSIFICATION_PATH = "/classify_report";
     private static final String REPORT_PATH = "/solana/report";
     private static final String VOTE_PATH = "/solana/vote";
     private static final String STATUS_PATH = "/status";

@@ -38,7 +38,7 @@ public class AuthController {
     @GetMapping("/debug-jwt")
     public boolean debugJwt(@AuthenticationPrincipal Jwt jwt) {
         var aiResponse = aiApiService
-            .sendReportToBlockchain(new BlockchainReportRequest("1", "1"))
+            .sendReportToBlockchain(new BlockchainReportRequest("aggfagfasgf", "1"))
             .blockOptional()
             .orElseThrow();
         log.info(aiResponse.getStatus());
