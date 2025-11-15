@@ -1,4 +1,12 @@
+# Core Frameworks
+fastapi
+uvicorn
+
+# Data Validation and Modeling
+pydantic
+
+# Google Gemini API
 google-genai
-torch
-Pillow
-dataclasses
+
+# Environment Variable Management
+python-dotenv
