@@ -38,7 +38,7 @@ class GeminiClassifier:
         If it is not, just return {{"status": "BAD_REQUEST"}}. 
         If the description is related to the image, you also need to determine the request's priority, and classify it. 
         Priority can be LOW, MEDIUM, HIGH. Class is a type of infrastructral problem. 
-        You need to respond in a JSON format {{"status": "OK", "classification": "[class you choose]", "priority": "[priprity you choose]"}}
+        You need to respond in a JSON format {{"status": "OK", "classification": "[class you choose]", "priority": "[priority you choose]"}}
         """
         return prompt.strip()
 
