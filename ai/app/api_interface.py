@@ -25,7 +25,7 @@ except Exception as e:
 
 @app.get("/")
 def read_root():
-    return {"status": "OK", "model": "SmolVLM-Instruct", "message": "Spreman za klasifikaciju."}
+    return {"status": "OK", "model": "gemini-2.5-flash", "message": "Spreman za klasifikaciju."}
 
 @app.post("/classify_report")
 async def classify_report(report: ReportInput):
@@ -53,4 +53,4 @@ async def classify_report(report: ReportInput):
 # --- POKRETANJE SERVERA ---
 if __name__ == "__main__":
     # Koristite `reload=True` za razvoj, ali izbegavajte to u produkciji
-    uvicorn.run("api_server:app", host="0.0.0.0", port=8000)
+    uvicorn.run("api_interface:app", host="0.0.0.0", port=8000)
