@@ -1,12 +1,11 @@
 package com.abeliangroup.civisight.controller;
 
-import com.abeliangroup.civisight.dto.IssueDTO;
-import com.abeliangroup.civisight.dto.ProblemDTO;
-import com.abeliangroup.civisight.dto.SuggestionDTO;
+import com.abeliangroup.civisight.dto.*;
 import com.abeliangroup.civisight.model.*;
 import com.abeliangroup.civisight.repo.ProblemRepository;
 import com.abeliangroup.civisight.repo.CitizenRepository;
 import com.abeliangroup.civisight.repo.VoteRepository;
+import com.abeliangroup.civisight.service.AiApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,6 +31,7 @@ public class ProblemController {
     private final ProblemRepository problemRepository;
     private final CitizenRepository citizenRepository;
     private final VoteRepository voteRepository;
+    private final AiApiService aiApiService;
 
     private Citizen getCurrentCitizen() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -130,6 +130,21 @@ public class ProblemController {
             String fileName = saveImage(imageFile);
             issue.setImageUrl("/images/" + fileName);
         }
+
+        var aiResponse = aiApiService.sendClassificationRequest(description, imageFile.getBytes()).block();
+        if(aiResponse.getStatus().equals("BAD_REQUEST")) throw new IllegalArgumentException("Description doesn't match the image.");
+        // TODO: Prepraviti kod tako da classification bude polje unutar issue-a i da se ne printuje nego cuva
+        // TODO: Takodje, izmeniti svuda gde treba
+        System.out.println(aiResponse.getClassification());
+
+        // TODO: Reward sistem: ako status nije BAD_REQUEST tj. AI ga je ocenio kao validnog, korisniku ulogovanom
+        // TODO: kojeg dobijas preko getCurrentCitizen() dodajes 10 poena i cuvas u bazi.
+
+
+        if(aiResponse.getPriority().equals("LOW")) issue.setUrgency(Urgency.LOW);
+        if(aiResponse.getPriority().equals("MEDIUM")) issue.setUrgency(Urgency.MEDIUM);
+        if(aiResponse.getPriority().equals("HIGH")) issue.setUrgency(Urgency.HIGH);
+
 
         return IssueDTO.toDTO(problemRepository.save(issue));
     }

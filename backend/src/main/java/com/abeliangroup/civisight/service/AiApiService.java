@@ -1,7 +1,7 @@
 package com.abeliangroup.civisight.service;
 
-import com.abeliangroup.civisight.dto.ExternalRequest;
-import com.abeliangroup.civisight.dto.ExternalResponse;
+import com.abeliangroup.civisight.dto.ClassificationRequest;
+import com.abeliangroup.civisight.dto.ClassificationResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +17,7 @@ public class AiApiService {
     private final WebClient webClient;
 
     // The base URL for the external API, injected from application properties
-    @Value("${external.api.url:http://localhost:8081/analyze}")
+    @Value("${external.api.url:http://10.0.10.126:8000/classify_report}")
     private String apiUrl;
 
     /**
@@ -35,13 +35,13 @@ public class AiApiService {
      * @param imageBytes The raw bytes of the image file.
      * @return A Mono emitting the ExternalResponse DTO upon successful processing.
      */
-    public Mono<ExternalResponse> sendClassificationRequest(String description, byte[] imageBytes) {
+    public Mono<ClassificationResponse> sendClassificationRequest(String description, byte[] imageBytes) {
 
         // 1. Convert image bytes to Base64 String as required by the DTO contract
         String base64Content = Base64.getEncoder().encodeToString(imageBytes);
 
         // 2. Create the request body DTO
-        ExternalRequest requestBody = new ExternalRequest(description, base64Content);
+        ClassificationRequest requestBody = new ClassificationRequest(description, base64Content);
 
         // 3. Make the non-blocking HTTP POST request using WebClient
         return webClient.post()
@@ -50,7 +50,7 @@ public class AiApiService {
             .retrieve()
 
             // Handle success (2xx response)
-            .bodyToMono(ExternalResponse.class)
+            .bodyToMono(ClassificationResponse.class)
 
             // Handle API-specific errors (e.g., 4xx, 5xx)
             .onErrorMap(e -> new ExternalApiException("Failed to communicate with external API: " + e.getMessage(), e));
