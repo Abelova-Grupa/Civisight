@@ -149,7 +149,7 @@ def vote(payload: VotePayload):
     On-chain se kao glasač koristi backend wallet; `user_id` služi samo za vašu evidenciju.
     """
     report_id = payload.report_id
-    user_id = payload.user_ida
+    user_id = payload.user_id
     vote_type = int(payload.vote)
 
     if vote_type not in (1, 2):
