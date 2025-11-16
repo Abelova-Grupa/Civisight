@@ -15,7 +15,9 @@ import java.util.function.Function;
  * Service responsible for communicating with the external API.
  */
 @Service
-public class AiApiService { private final WebClient webClient;
+public class AiApiService {
+    private static final String SOLIDITY_PATH = "/solidity/report";
+    private final WebClient webClient;
 
     // Use a constant for the property key and default URL
     private static final String API_BASE_URL_PROPERTY = "${external.api.url:http://10.0.10.126:8000}";
@@ -80,6 +82,16 @@ public class AiApiService { private final WebClient webClient;
             .retrieve()
             .bodyToMono(String.class)
             .onErrorMap(e -> new ExternalApiException("Failed to retrieve external status: " + e.getMessage(), e));
+    }
+
+    // --- 5. ANOTHER BLOCKCHAIN POST METHOD
+    public Mono<BlockchainSolidityReport> sendSolidity(BlockchainSolidityReport request) {
+        return webClient.post()
+            .uri(SOLIDITY_PATH)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(BlockchainSolidityReport.class)
+            .onErrorMap(e -> new ExternalApiException("Failed to send report to solidity API: " + e.getMessage(), e));
     }
 
     // --- EXCEPTION CLASS ---
