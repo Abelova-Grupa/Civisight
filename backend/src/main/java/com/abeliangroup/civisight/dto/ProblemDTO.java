@@ -1,8 +1,6 @@
 package com.abeliangroup.civisight.dto;
 
-import com.abeliangroup.civisight.model.Citizen;
-import com.abeliangroup.civisight.model.Problem;
-import com.abeliangroup.civisight.model.Status;
+import com.abeliangroup.civisight.model.*;
 import com.abeliangroup.civisight.repo.VoteRepository;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +18,11 @@ public class ProblemDTO {
     private Integer upvotes;
     private Integer downvotes;
     private Integer reports;
-    private Short userOpinion; // -1: downvote; 0: nothing; +1: upvoted
+    private Short userOpinion = 0; // -1: downvote; 0: nothing; +1: upvoted
     private Status status;
+
+    private Urgency urgency;
+    private String classification;
 
     // ENTITY → DTO
     public static ProblemDTO toDTO(Problem problem) {
@@ -35,6 +36,13 @@ public class ProblemDTO {
         dto.setDownvotes(problem.getDownvotes());
         dto.setReports(problem.getReports());
         dto.setStatus(problem.getStatus());
+
+        if(problem instanceof Issue) {
+            Issue issue = (Issue) problem;
+            dto.setUrgency(issue.getUrgency());
+            dto.setClassification(issue.getIssueType());
+        }
+
         return dto;
     }
 

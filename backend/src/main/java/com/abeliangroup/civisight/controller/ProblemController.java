@@ -8,6 +8,7 @@ import com.abeliangroup.civisight.repo.VoteRepository;
 import com.abeliangroup.civisight.service.AiApiService;
 import com.abeliangroup.civisight.service.VoteService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/problems")
 @RequiredArgsConstructor
@@ -158,8 +160,20 @@ public class ProblemController {
         if(aiResponse.getPriority().equals("MEDIUM")) issue.setUrgency(Urgency.MEDIUM);
         if(aiResponse.getPriority().equals("HIGH")) issue.setUrgency(Urgency.HIGH);
 
+        var ret =  new ResponseEntity<>(SuggestionDTO.toDTO(problemRepository.save(issue)), HttpStatus.CREATED);
 
-        return new ResponseEntity<>(SuggestionDTO.toDTO(problemRepository.save(issue)), HttpStatus.CREATED);
+        // Blockchain
+        try {
+            var bcResponse = aiApiService
+                .sendReportToBlockchain(new BlockchainReportRequest(ret.getBody().getId().toString(),
+                    citizen.getId().toString()))
+                .blockOptional()
+                .orElseThrow();
+        } catch (Exception e) {
+            log.warn("Issue couldn't be written to the Blockchain... Continue.");
+        }
+
+        return ret;
     }
 
     // Helper method to save image
@@ -245,6 +259,18 @@ public class ProblemController {
         vote.setUp(value);
         if(value){
             problem.setUpvotes(problem.getUpvotes() + 1);
+
+            // Blockchain
+            try {
+                var aiResponse = aiApiService
+                    .sendVoteToBlockchain(new BlockchainVoteRequest(id.toString(), citizen.getId().toString(), (byte) 1))
+                    .blockOptional()
+                    .orElseThrow();
+            } catch (Exception e) {
+                log.warn("Upvote couldn't be written to the Blockchain... Continue.");
+            }
+
+
         } else problem.setUpvotes(problem.getUpvotes() - 1);
         problemRepository.save(problem);
         voteRepository.save(vote);
@@ -270,6 +296,15 @@ public class ProblemController {
         vote.setDown(value);
         if(value){
             problem.setDownvotes(problem.getDownvotes() + 1);
+            // Blockchain
+            try {
+                var aiResponse = aiApiService
+                    .sendVoteToBlockchain(new BlockchainVoteRequest(id.toString(), citizen.getId().toString(), (byte) 2))
+                    .blockOptional()
+                    .orElseThrow();
+            } catch (Exception e) {
+                log.warn("Downvote couldn't be written to the Blockchain... Continue.");
+            }
         } else problem.setDownvotes(problem.getDownvotes() - 1);
         problemRepository.save(problem);
         voteRepository.save(vote);
