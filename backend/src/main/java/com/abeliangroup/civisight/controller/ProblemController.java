@@ -164,11 +164,23 @@ public class ProblemController {
 
         // Blockchain
         try {
-            var bcResponse = aiApiService
+            // SOLANA
+            var solanaResponse = aiApiService
                 .sendReportToBlockchain(new BlockchainReportRequest(ret.getBody().getId().toString(),
                     citizen.getId().toString()))
                 .blockOptional()
                 .orElseThrow();
+
+            // SOLIDITY
+            var solidityResponse = aiApiService
+                .sendSolidity(new BlockchainSolidityReport(
+                    issue.getLatitude(),
+                    issue.getLongitude(),
+                    issue.getUrgency().ordinal()
+                ))
+                .blockOptional()
+                .orElseThrow();
+
         } catch (Exception e) {
             log.warn("Issue couldn't be written to the Blockchain... Continue.");
         }
@@ -249,10 +261,12 @@ public class ProblemController {
         Problem problem = problemRepository.findById(id).orElseThrow(IllegalArgumentException::new);
 
         if(!voteRepository.existsByCitizenIdAndProblemId(citizen.getId(), id)) {
+            log.info("Vote doesn't exist. Creating.");
             vote = new Vote();
             vote.setCitizen(citizen);
             vote.setProblem(problem);
         } else {
+            log.info("Vote exists.");
             vote = voteRepository.findByCitizenAndProblem(citizen, problem)
                 .orElseThrow(IllegalArgumentException::new);
         }
@@ -261,6 +275,7 @@ public class ProblemController {
             problem.setUpvotes(problem.getUpvotes() + 1);
 
             // Blockchain
+            log.warn("Reaching blockchain...");
             try {
                 var aiResponse = aiApiService
                     .sendVoteToBlockchain(new BlockchainVoteRequest(id.toString(), citizen.getId().toString(), (byte) 1))
@@ -268,6 +283,7 @@ public class ProblemController {
                     .orElseThrow();
             } catch (Exception e) {
                 log.warn("Upvote couldn't be written to the Blockchain... Continue.");
+
             }
 
 
