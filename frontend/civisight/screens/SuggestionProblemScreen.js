@@ -9,8 +9,6 @@ import {
   Image,
   Alert,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
@@ -33,6 +31,8 @@ const SuggestionProblemScreen = () => {
   const [locationAddress, setLocationAddress] = useState(
     "Fetching location..."
   );
+  const [post, setPost] = useState(null)
+
   const [showPopup, setShowPopup] = useState(false);
   const [popupStatus, setPopupStatus] = useState(null);
 
@@ -159,7 +159,7 @@ const SuggestionProblemScreen = () => {
           type: `image/${fileType}`, 
         });
       }
-
+      let status = 500;
       try {
         const endpoint = type === "problem" ? "issue" : "suggestion"
         const token = await SecureStore.getItemAsync("user_jwt")
@@ -173,19 +173,14 @@ const SuggestionProblemScreen = () => {
           // header, including the necessary boundary, when sending a FormData object.
           body: formData,
         });
-
-        if (!response.ok) {
-          throw new Error(
-            response.status
-          );
-        }
-
-        setPopupStatus(responseStatus);
+        status = response.status
+        setPopupStatus(status);
         setShowPopup(true);
 
-        navigation.navigate("Main");
+        const data = await response.json()
+        setPost(data)
+
       } catch (error) {
-        const status = parseInt(error.message) || 500; 
 
         setPopupStatus(status);
         setShowPopup(true);
@@ -194,14 +189,6 @@ const SuggestionProblemScreen = () => {
       }
 
     console.log("Submitting:", postData);
-    // --- END: API Call Simulation ---
-
-    setLoading(false);
-    Alert.alert(
-      "Success",
-      `${type === "problem" ? "Problem" : "Suggestion"} posted successfully!`
-    );
-    navigation.navigate("Main");
   };
 
   const initialRegion = location
@@ -331,7 +318,14 @@ const SuggestionProblemScreen = () => {
     <StatusPopup
         statusCode={popupStatus}
         isVisible={showPopup}
-        onClose={() => setShowPopup(false)}
+        onClose={() => {
+          setShowPopup(false)
+          setLocation(null)
+          setDescription("")
+          setImageUri(null)
+          fetchLocation()
+        }}
+        post={post}
       />
         
       </View>
