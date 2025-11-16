@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ProfileScreen from './ProfileScreen';
 import SuggestionProblemScreen from './SuggestionProblemScreen';
 import Posts from '../components/Posts'
+import MapScreen from '../components/MapScreen';
 
 
 // Placeholder for Posts Screen
@@ -16,26 +17,6 @@ function PostsScreen() {
     </View>
   );
 }
-
-// // Placeholder for Photos Screen
-// function PhotosScreen() {
-//   return (
-//     <View style={styles.screen}>
-//       <Text style={styles.header}>Photos Gallery</Text>
-//       <Text>View and upload photos.</Text>
-//     </View>
-//   );
-// }
-
-// // Placeholder for Profile Screen
-// function ProfileScreen() {
-//   return (
-//     <View style={styles.screen}>
-//       <Text style={styles.header}>User Profile</Text>
-//       <Text>Manage your account settings.</Text>
-//     </View>
-//   );
-// }
 
 // --- 2. Initialize the Tab Navigator ---
 const Tab = createBottomTabNavigator();
@@ -55,6 +36,8 @@ function MainScreen() {
             iconName = focused ? 'camera' : 'camera-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'Map') {
+            iconName = focused ? 'map' : 'map-outline'
           }
           
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -69,6 +52,7 @@ function MainScreen() {
       <Tab.Screen name="Posts" component={PostsScreen} />
       <Tab.Screen name="Report" component={SuggestionProblemScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Map" component={MapScreen}/>
     </Tab.Navigator>
   );
 }

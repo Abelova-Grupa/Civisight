@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Dimensions, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 // Dohvaćanje visine prozora
 const { height } = Dimensions.get('window');
@@ -11,16 +12,17 @@ const { height } = Dimensions.get('window');
  * @param {boolean} isVisible - Kontrolira je li popup vidljiv.
  * @param {function} onClose - Funkcija koja se poziva za zatvaranje popup-a.
  */
-const StatusPopup = ({ statusCode, isVisible, onClose }) => {
+const StatusPopup = ({ statusCode, isVisible, onClose, post }) => {
   // Stanje za animaciju (pomicanje popup-a)
   const [slideAnim] = useState(new Animated.Value(0));
+  const navigation = useNavigation();
 
   // Određuje detalje poruke i stila na temelju status koda
   const getStatusDetails = (code) => {
     switch (code) {
       case 201:
         return {
-          message: 'Successfully registered problem with AI.',
+          message: `Successfully registered problem with AI as ${post?.classification}.`,
           backgroundColor: '#4CAF50', // Zelena za uspjeh
         };
       case 406:
