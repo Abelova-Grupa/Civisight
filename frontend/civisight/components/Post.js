@@ -19,8 +19,7 @@ const Post = ({post}) => {
 
     if(type === 'up') {
       setUpvotes(prev => hasVotedUp ? prev - 1 : prev + 1)
-      setHasVotedUp(!hasVotedUp)
-      setHasVotedDown(hasVotedUp)
+      
 
       const url = `http://10.0.10.166:8080/api/problems/${post.id}/upvote`
       const token = await SecureStore.getItemAsync("user_jwt")
@@ -30,7 +29,7 @@ const Post = ({post}) => {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(hasVotedUp)
+            body: JSON.stringify(!hasVotedUp)
             
         }
 
@@ -41,10 +40,10 @@ const Post = ({post}) => {
         }
 
         const data = await res.json()
-
+        setHasVotedUp(!hasVotedUp)
+        setHasVotedDown(hasVotedUp)
     }else{
       setUpvotes(prev => hasVotedDown ? prev + 1 : prev - 1)
-      setHasVotedDown(!hasVotedDown)
 
       const url = `http://10.0.10.166:8080/api/problems/${post.id}/downvote`
       const token = await SecureStore.getItemAsync("user_jwt")
@@ -54,7 +53,7 @@ const Post = ({post}) => {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(hasVotedDown)
+            body: JSON.stringify(!hasVotedDown)
         }
 
         const res = await fetch(url,req)
@@ -62,7 +61,8 @@ const Post = ({post}) => {
             const error = await res.json()
             alert(error)
         }
-
+      setHasVotedDown(!hasVotedDown)
+      setHasVotedUp(hasVotedDown)
     }
 
   };

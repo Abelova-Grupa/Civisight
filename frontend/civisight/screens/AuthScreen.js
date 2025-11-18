@@ -122,9 +122,9 @@ const AuthScreen = ({navigation}) => {
           <TouchableOpacity>
             <Text style={styles.forgotPassword}>Forgot your password?</Text>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <Text style={styles.forgotPassword} onPress={handleNavigateToMain}>Main</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

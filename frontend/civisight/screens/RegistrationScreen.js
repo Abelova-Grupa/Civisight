@@ -27,7 +27,7 @@ const RegistrationScreen = ({ navigation }) => {
 
     setLoading(true);
     try{
-        const url = "http://10.0.10.161:8080/auth/register"
+        const url = "http://10.0.10.166:8080/auth/register"
         const req = {
           method: 'POST',
           headers: {
