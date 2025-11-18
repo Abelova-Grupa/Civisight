@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   View, 
   Text, 
@@ -38,7 +37,7 @@ const ProfileScreen = () => {
           <View style={styles.avatarContainer}>
             {/* Avatara Image - Replace with your actual image source */}
             <Image 
-              source={{ uri: 'https://i.imgur.com/G5iM87h.png' }} // Placeholder image 
+              source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/User-avatar.svg/2048px-User-avatar.svg.png' }} // Placeholder image 
               style={styles.avatar}
             />
           </View>
